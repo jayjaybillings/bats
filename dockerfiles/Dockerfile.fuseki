@@ -1,4 +1,12 @@
 FROM openjdk:11.0.1-jre
 MAINTAINER Jay Jay Billings (billingsjj@ornl.gov)
-CMD ["date"]
 
+# Copy the Fuseki tar ball if it is on the local file system and automatically expand it.
+COPY apache-jena-fuseki /opt/apache-jena-fuseki
+
+# Expose the Fuseki port
+EXPOSE 3030
+
+# Execute Fuseki from the installation directory
+WORKDIR /opt/apache-jena-fuseki
+CMD ["./fuseki-server"]
