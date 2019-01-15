@@ -5,7 +5,7 @@ FUSEKI_NAME=apache-jena-fuseki
 FUSEKI_DOWNLOAD_FILE=$FUSEKI_NAME-$FUSEKI_VERSION.tar.gz
 
 # Download Fuseki if it isn't available
-if [ ! -f $FILE ]; then
+if [ ! -f $FUSEKI_DOWNLOAD_FILE ]; then
 	wget https://www-us.apache.org/dist/jena/binaries/$FUSEKI_DOWNLOAD_FILE
 fi
 
