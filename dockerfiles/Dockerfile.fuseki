@@ -9,4 +9,4 @@ EXPOSE 3030
 
 # Execute Fuseki from the installation directory
 WORKDIR /opt/apache-jena-fuseki
-CMD ["./fuseki-server"]
+ENTRYPOINT ["/bin/bash", "-c", "./fuseki-server --loc=/data/TDB /data"]

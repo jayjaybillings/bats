@@ -1,0 +1,12 @@
+version: '3'
+services:
+  fuseki:
+    build:
+      context: ./dockerfiles
+      dockerfile: Dockerfile.fuseki
+    ports:
+    - "3030:3030"
+    volumes:
+    - fuseki-TDB:/data/TDB
+volumes:
+  fuseki-TDB: {}
