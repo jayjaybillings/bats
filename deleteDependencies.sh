@@ -1,2 +1,2 @@
-# Remove the unused Fuseki dir
-rm -rf $FUSEKI_NAME
+# Remove the unused Fuseki directory
+rm -rf dockerfiles/apache-jena-fuseki*
