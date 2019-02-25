@@ -18,6 +18,6 @@ tar -xzvf $FUSEKI_DOWNLOAD_FILE
 mv $FUSEKI_NAME-$FUSEKI_VERSION $FUSEKI_NAME
 
 # Make the configuration directory an add the default dataset configuration
-#mkdir -p $FUSEKI_NAME/run/configuration
-#cp dataset.ttl $FUSEKI_NAME/run/configuration/
+mkdir -p $FUSEKI_NAME/run/configuration
+cp dataset.ttl $FUSEKI_NAME/run/configuration/
 cd ..

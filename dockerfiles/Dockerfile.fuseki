@@ -9,5 +9,4 @@ EXPOSE 3030
 
 # Execute Fuseki from the installation directory
 WORKDIR /opt/apache-jena-fuseki
-#ENTRYPOINT ["./fuseki-server","--loc=/data/TDB", "/bats-data"]
 ENTRYPOINT ["./fuseki-server"]
