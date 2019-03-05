@@ -10,8 +10,23 @@
  *****************************************************************************/
 package gov.ornl.rse.bats;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.apache.http.Consts;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.rdf.model.Model;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a set of data describing a topic or item of interest.
@@ -30,14 +45,24 @@ import org.apache.jena.rdf.model.Model;
  * The push() and pull() operations are not presently safe in that they do not
  * merge data coming from or going to the server before executing their tasks.
  * This means that they may overwrite data from either source if used
- * inadvertently.
+ * inadvertently. By default, DataSet only created Jena TDB2 persistent triple
+ * stores on the remote server for RDF models.
  * 
  * @author Jay Jay Billings
  *
  */
 public class DataSet {
 
+	/**
+	 * This is the default name used as the base for all unnamed instances of
+	 * DataSet.
+	 */
 	public static final String DEFAULT_NAME = "unnamed-dataset";
+
+	/**
+	 * Log utility
+	 */
+	protected static final Logger logger = LoggerFactory.getLogger(DataSet.class);
 
 	/**
 	 * The default host which holds the dataset.
@@ -115,12 +140,42 @@ public class DataSet {
 	/**
 	 * This operation creates a dataset with the given name. If no name is provided
 	 * to setName(), the default name with a UUID appended to it will be used such
-	 * that the form of the name will be "unnamed-dataset_<UUID>."
+	 * that the form of the name will be "unnamed-dataset_<UUID>." Note that
+	 * creation does not imply retrieval and getRootModel() or getModel() functions
+	 * still need to be called.
 	 * 
 	 * @throws Exception this exception is thrown if the data set cannot be created
 	 *                   for any reason.
 	 */
 	public void create() throws Exception {
+
+		// Configure the name
+		String dbName = DEFAULT_NAME;
+		if (name == DEFAULT_NAME) {
+			name += "_" + UUID.randomUUID().toString();
+		}
+		dbName = name;
+		// Per the spec, always use tdb2.
+		String dbType = "tdb2";
+
+		// Connect the HTTP client
+		HttpClient client = HttpClientBuilder.create().build();
+		String fusekiLocation = host + ":" + port + "/";
+		String fusekiDataAPILoc = "$/datasets";
+		HttpPost post = new HttpPost((fusekiLocation + fusekiDataAPILoc));
+
+		// Add the database parameters into the form with UTF_8 encoding.
+		List<NameValuePair> form = new ArrayList<NameValuePair>();
+		form.add(new BasicNameValuePair("dbName", dbName));
+		form.add(new BasicNameValuePair("dbType", dbType));
+		UrlEncodedFormEntity formEntity = new UrlEncodedFormEntity(form, Consts.UTF_8);
+
+		// Create the data set
+		post.setEntity(formEntity);
+		HttpResponse response = client.execute(post);
+		logger.debug(response.toString());
+
+		return;
 	}
 
 	/**
@@ -162,13 +217,13 @@ public class DataSet {
 	 * This operation returns the root model in the data set, which is called the
 	 * default graph in the Jena jargon. It is referred to as the root model here to
 	 * denote that it is the root model in a hierarchy of models describing the same
-	 * set.
+	 * set. This is a convenience method identically equal to calling getModel(null)
+	 * or getModel("default").
 	 * 
 	 * @return the root model
 	 */
 	public Model getRootModel() {
-		Model model = null;
-		return model;
+		return getModel(null);
 	}
 
 	/**
@@ -178,7 +233,7 @@ public class DataSet {
 	 * @param modelName the name of the model that should be retrieved from the data
 	 *                  set. Note that like Jena, calling with an argument of
 	 *                  "default" or "null" will return the default graph/model.
-	 * @return the model
+	 * @return the model if it exists in the data set
 	 */
 	public Model getModel(final String modelName) {
 		Model model = null;

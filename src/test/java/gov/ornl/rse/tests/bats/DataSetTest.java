@@ -12,6 +12,10 @@ package gov.ornl.rse.tests.bats;
 
 import static org.junit.Assert.*;
 
+import org.apache.jena.query.ReadWrite;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdfconnection.RDFConnectionFuseki;
+import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,6 +40,8 @@ public class DataSetTest {
 
 	@Test
 	public void testCreate() {
+
+		// Create a default, empty data set with the default name
 		DataSet dataSet = new DataSet();
 		try {
 			dataSet.create();
@@ -44,8 +50,25 @@ public class DataSetTest {
 			e.printStackTrace();
 			fail();
 		}
-		
-		fail("Not yet implemented");
+
+		// Grab the dataset directy from the server
+		String name = dataSet.getName();
+		String fusekiURI = "http://localhost:3030/" + name;
+		String fusekiGetURI = fusekiURI + "/get";
+		RDFConnectionRemoteBuilder getConnBuilder = RDFConnectionFuseki.create().destination(fusekiGetURI);
+		try (RDFConnectionFuseki getConn = (RDFConnectionFuseki) getConnBuilder.build()) {
+			getConn.begin(ReadWrite.READ);
+			Model model = getConn.fetch(null);
+			getConn.commit();
+
+			// The only real check that exists is whether or not the exception is caught.
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Data set not found!");
+		}
+
+		return;
 	}
 
 }
