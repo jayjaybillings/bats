@@ -12,6 +12,8 @@ package gov.ornl.rse.tests.bats;
 
 import static org.junit.Assert.*;
 
+import java.util.UUID;
+
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdfconnection.RDFConnectionFuseki;
@@ -43,6 +45,32 @@ public class DataSetTest {
 
 		// Create a default, empty data set with the default name
 		DataSet dataSet = new DataSet();
+		// Check the data set creation
+		checkDataSetCreationOnServer(dataSet);
+
+		// Configure the name and some other details of a dataset and test that functionality
+		DataSet dataSet2 = new DataSet();
+		String uuidString = UUID.randomUUID().toString();
+		String name = "dataSetTest" + "." + uuidString;
+		dataSet2.setName(name);
+		dataSet2.setHost("http://127.0.0.1");
+		dataSet2.setPort(5);
+		// Make sure these work OK
+		assertEquals(name,dataSet2.getName());
+		assertEquals("http://127.0.0.1",dataSet2.getHost());
+		// Just check that the port is set properly since actually testing a port switch is too onerous
+		assertEquals(5,dataSet2.getPort());
+		// Reset the port to avoid an error since it has been proven that it could be stored correctly.
+		dataSet2.setPort(3030);
+		
+		// Check creating the dataset on the server with its custom args
+		checkDataSetCreationOnServer(dataSet2);
+		
+		return;
+	}
+
+	private void checkDataSetCreationOnServer(final DataSet dataSet) {
+		// Create the dataset
 		try {
 			dataSet.create();
 		} catch (Exception e) {
@@ -50,13 +78,14 @@ public class DataSetTest {
 			e.printStackTrace();
 			fail();
 		}
-
+		
 		// Grab the dataset directy from the server
 		String name = dataSet.getName();
-		String fusekiURI = "http://localhost:3030/" + name;
+		String fusekiURI = dataSet.getHost() + ":" + dataSet.getPort() +  "/" + name;
 		String fusekiGetURI = fusekiURI + "/get";
 		RDFConnectionRemoteBuilder getConnBuilder = RDFConnectionFuseki.create().destination(fusekiGetURI);
 		try (RDFConnectionFuseki getConn = (RDFConnectionFuseki) getConnBuilder.build()) {
+			System.out.println("Pulling " + dataSet.getName());
 			getConn.begin(ReadWrite.READ);
 			Model model = getConn.fetch(null);
 			getConn.commit();
@@ -67,8 +96,6 @@ public class DataSetTest {
 			e.printStackTrace();
 			fail("Data set not found!");
 		}
-
-		return;
 	}
 
 }
