@@ -141,8 +141,8 @@ public class DataSet {
 	 * This operation creates a dataset with the given name. If no name is provided
 	 * to setName(), the default name with a UUID appended to it will be used such
 	 * that the form of the name will be "unnamed-dataset_<UUID>." Note that
-	 * creation does not imply retrieval and getRootModel() or getModel() functions
-	 * still need to be called.
+	 * creation does not imply retrieval, and that the getRootModel() or getModel()
+	 * functions still need to be called.
 	 * 
 	 * @throws Exception this exception is thrown if the data set cannot be created
 	 *                   for any reason.
@@ -180,7 +180,9 @@ public class DataSet {
 
 	/**
 	 * This operation loads the data from the remote host. It requires that the name
-	 * is provided through the setName() operation.
+	 * is provided through the setName() operation. (Simply attempting to load a
+	 * default data set will likely fail outright since the default dataset name is
+	 * auto-generated and unique.)
 	 * 
 	 * @throws Exception this exception is thrown if the data set cannot be loaded
 	 *                   for any reason.
