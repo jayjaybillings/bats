@@ -23,10 +23,14 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.jena.query.Dataset;
+import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.jena.rdfconnection.RDFConnectionFuseki;
+import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
+import org.apache.jena.update.Update;
+import org.apache.jena.util.FileManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 
 /**
  * This class represents a set of data describing a topic or item of interest.
@@ -38,15 +42,13 @@ import org.slf4j.LoggerFactory;
  * Data sets are organized in the Apache Jena style, with each set containing
  * one or more subsets called "Models." This class largely wraps those
  * operations into a more convenient interface that masks Jena's HTTP-based
- * transfer routines and fits the intended use better. However, advanced users
+ * transfer routines, and fits the intended use better. However, advanced users
  * may retrieve the Jena dataset by calling getJenaDataset().
  * 
- * Data sets may be "pulled" and "pushed" to synchronize with the remote server.
- * The push() and pull() operations are not presently safe in that they do not
- * merge data coming from or going to the server before executing their tasks.
- * This means that they may overwrite data from either source if used
- * inadvertently. By default, DataSet only created Jena TDB2 persistent triple
- * stores on the remote server for RDF models.
+ * By default, DataSet only create Jena TDB2 persistent triple stores on the
+ * remote server for RDF models. Instances do not hold copies or handles to any
+ * data that they represent because the size of the data is not known in
+ * advance. Instead, this class interacts directly with the remote triple store.
  * 
  * @author Jay Jay Billings
  *
@@ -62,7 +64,7 @@ public class DataSet {
 	/**
 	 * Log utility
 	 */
-	protected static final Logger logger = LoggerFactory.getLogger(DataSet.class);
+	protected static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(DataSet.class.getName());
 
 	/**
 	 * The default host which holds the dataset.
@@ -138,11 +140,23 @@ public class DataSet {
 	}
 
 	/**
+	 * This operation returns the full URI identifying this data set on the remote
+	 * server, including hostname, port, and set name.
+	 * 
+	 * @return the full URI including all parts
+	 */
+	public String getFullURI() {
+		return getHost() + ":" + getPort() + "/" + getName();
+	}
+	
+	/**
 	 * This operation creates a dataset with the given name. If no name is provided
 	 * to setName(), the default name with a UUID appended to it will be used such
 	 * that the form of the name will be "unnamed-dataset_<UUID>." Note that
 	 * creation does not imply retrieval, and that the getRootModel() or getModel()
-	 * functions still need to be called.
+	 * functions still need to be called. Likewise (and obviously), if the model
+	 * already exists on the remote server it can just be retrieved without calling
+	 * create().
 	 * 
 	 * @throws Exception this exception is thrown if the data set cannot be created
 	 *                   for any reason.
@@ -179,40 +193,30 @@ public class DataSet {
 	}
 
 	/**
-	 * This operation loads the data from the remote host. It requires that the name
-	 * is provided through the setName() operation. (Simply attempting to load a
-	 * default data set will likely fail outright since the default dataset name is
-	 * auto-generated and unique.)
+	 * This operation directs the data set to update and persist any remotely stored
+	 * versions of this model with this version of the model. This action is a
+	 * complete re-write of the data, with out a merge or any checks.
 	 * 
-	 * @throws Exception this exception is thrown if the data set cannot be loaded
-	 *                   for any reason.
+	 * @param modelName the name of the model that will be updated
+	 * @param model     the model that will be updated remotely
 	 */
-	public void load() throws Exception {
+	public void updateModel(final String modelName, Model model) {
 
-	}
+		RDFConnectionRemoteBuilder uploadConnBuilder = RDFConnectionFuseki.create()
+				.destination(getFullURI() + "/update");
 
-	/**
-	 * This operation attempts to pull the latest changes to the data set from the
-	 * remote Fuseki server. WARNING: This is not a safe operation and calling it
-	 * may corrupt data that has not been pushed to the server.
-	 * 
-	 * @throws Exception this exception is thrown if the data set cannot be loaded
-	 *                   for any reason.
-	 */
-	public void pull() throws Exception {
-
-	}
-
-	/**
-	 * This operation attempts to push the latest changes to the data set to the
-	 * remote Fuseki server. WARNING: This is not a safe operation and calling it
-	 * may corrupt data that has been pushed to the server.
-	 * 
-	 * @throws Exception this exception is thrown if the data set cannot be loaded
-	 *                   for any reason.
-	 */
-	public void push() throws Exception {
-
+		// Open a connection to upload the ICE ontology.
+		try (RDFConnectionFuseki uploadConn = (RDFConnectionFuseki) uploadConnBuilder.build()) {
+			// Note that transactions must proceed with begin(), some operation(), and
+			// commit().
+			uploadConn.begin(ReadWrite.WRITE);
+			uploadConn.put(modelName, model);
+			uploadConn.commit();
+			logger.debug("Committed model " + modelName + " to data set" + getName());
+		} catch (Exception e) {
+			logger.error("Unable to update model " + modelName + " in data set " + getName()
+					+ " on the remote Fuseki server.", e);
+		}
 	}
 
 	/**
@@ -222,7 +226,7 @@ public class DataSet {
 	 * set. This is a convenience method identically equal to calling getModel(null)
 	 * or getModel("default").
 	 * 
-	 * @return the root model
+	 * @return the root model if the data set exists, otherwise null
 	 */
 	public Model getRootModel() {
 		return getModel(null);
@@ -235,10 +239,22 @@ public class DataSet {
 	 * @param modelName the name of the model that should be retrieved from the data
 	 *                  set. Note that like Jena, calling with an argument of
 	 *                  "default" or "null" will return the default graph/model.
-	 * @return the model if it exists in the data set
+	 * @return the model if it exists in the data set, otherwise null
 	 */
 	public Model getModel(final String modelName) {
 		Model model = null;
+		RDFConnectionRemoteBuilder getConnBuilder = RDFConnectionFuseki.create()
+				.destination(getFullURI() + "/get");
+
+		try (RDFConnectionFuseki getConn = (RDFConnectionFuseki) getConnBuilder.build()) {
+			getConn.begin(ReadWrite.READ);
+			model = getConn.fetch(modelName);
+			getConn.commit();
+			logger.debug("Retrieved model " + modelName + " from data set" + getName());
+		} catch (Exception e) {
+			logger.error("Unable to find model " + modelName + " in data set " + getName(), e);
+		}
+
 		return model;
 	}
 
@@ -252,6 +268,18 @@ public class DataSet {
 	 */
 	public Dataset getJenaDataset() {
 		Dataset set = null;
+		RDFConnectionRemoteBuilder getConnBuilder = RDFConnectionFuseki.create()
+				.destination(getFullURI() + "/get");
+
+		try (RDFConnectionFuseki getConn = (RDFConnectionFuseki) getConnBuilder.build()) {
+			getConn.begin(ReadWrite.READ);
+			set = getConn.fetchDataset();
+			getConn.commit();
+			logger.debug("Retrieved data set" + getName());
+		} catch (Exception e) {
+			logger.error("Unable to find data set " + getName(), e);
+		}
+
 		return set;
 	}
 

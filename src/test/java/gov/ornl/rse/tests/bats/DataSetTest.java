@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdfconnection.RDFConnectionFuseki;
 import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
 import org.junit.BeforeClass;
@@ -118,10 +119,16 @@ public class DataSetTest {
 		// Create a new data set
 		DataSet dataSet = new DataSet();
 		checkDataSetCreationOnServer(dataSet);
+		Model model = ModelFactory.createDefaultModel();
+		dataSet.updateModel("testModel", model);
 		
 		// Check the root/default model
 		Model rootModel = dataSet.getRootModel();
 		assertNotNull(rootModel);
+		
+		// Check the named model
+		Model namedModel = dataSet.getModel("testModel");
+		assertNotNull(namedModel);
 	}
 	
 	/**
