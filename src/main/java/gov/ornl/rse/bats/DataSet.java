@@ -27,6 +27,7 @@ import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdfconnection.RDFConnectionFuseki;
 import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
+import org.apache.jena.riot.Lang;
 import org.apache.jena.update.Update;
 import org.apache.jena.util.FileManager;
 import org.apache.logging.log4j.LogManager;
@@ -203,13 +204,15 @@ public class DataSet {
 	public void updateModel(final String modelName, Model model) {
 
 		RDFConnectionRemoteBuilder uploadConnBuilder = RDFConnectionFuseki.create()
-				.destination(getFullURI() + "/update");
+				.destination(getFullURI() + "/data");
 
 		// Open a connection to upload the ICE ontology.
 		try (RDFConnectionFuseki uploadConn = (RDFConnectionFuseki) uploadConnBuilder.build()) {
 			// Note that transactions must proceed with begin(), some operation(), and
 			// commit().
 			uploadConn.begin(ReadWrite.WRITE);
+			System.out.println(model.toString());
+//			uploadConn.load(modelName, model);
 			uploadConn.put(modelName, model);
 			uploadConn.commit();
 			logger.debug("Committed model " + modelName + " to data set" + getName());
@@ -244,7 +247,7 @@ public class DataSet {
 	public Model getModel(final String modelName) {
 		Model model = null;
 		RDFConnectionRemoteBuilder getConnBuilder = RDFConnectionFuseki.create()
-				.destination(getFullURI() + "/get");
+				.destination(getFullURI() + "/data");
 
 		try (RDFConnectionFuseki getConn = (RDFConnectionFuseki) getConnBuilder.build()) {
 			getConn.begin(ReadWrite.READ);

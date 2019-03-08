@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdfconnection.RDFConnectionFuseki;
 import org.apache.jena.rdfconnection.RDFConnectionRemoteBuilder;
 import org.junit.BeforeClass;
@@ -120,17 +122,37 @@ public class DataSetTest {
 		DataSet dataSet = new DataSet();
 		checkDataSetCreationOnServer(dataSet);
 		Model model = ModelFactory.createDefaultModel();
+		Resource resource = model.createResource("testModelResource");
+		Property property = model.createProperty("none", "g");
+		resource.addProperty(property, "testProp");
+		int numTriples = 1;
+
+		// Update the data set
 		dataSet.updateModel("testModel", model);
-		
+
 		// Check the root/default model
 		Model rootModel = dataSet.getRootModel();
 		assertNotNull(rootModel);
-		
+
 		// Check the named model
 		Model namedModel = dataSet.getModel("testModel");
 		assertNotNull(namedModel);
+		// Make sure that the model matches the original model by doing a difference and
+		// checking the number of statements in the difference model.
+		Model differenceModel = namedModel.difference(model);
+		assertFalse(differenceModel.listStatements().hasNext());
+
+		// Try putting the model a second time to make sure that it doesn't get
+		// duplicated.
+		dataSet.updateModel("testModel", model);
+		// Make sure the number of triples didn't change with this update.
+		Model namedModel2 = dataSet.getModel("testModel");
+		Model differenceModel2 = namedModel2.difference(model);
+		assertFalse(differenceModel2.listStatements().hasNext());
+		
+		return;
 	}
-	
+
 	/**
 	 * This operation checks loading a pre-existing data set.
 	 */
@@ -140,17 +162,17 @@ public class DataSetTest {
 		// Create a new data set
 		DataSet referenceDataSet = new DataSet();
 		checkDataSetCreationOnServer(referenceDataSet);
-		
+
 		// Put something in it
-		
+
 		// Upload it to the server
-		
-		// Load the contenst from the server into a new, empty data set
-		
+
+		// Load the contents from the server into a new, empty data set
+
 		// Check something!
-		
+
 		fail("Not yet implemented.");
-		
+
 		return;
 	}
 
