@@ -14,6 +14,7 @@ import static org.junit.Assert.*;
 
 import java.util.UUID;
 
+import org.apache.jena.query.Dataset;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -121,11 +122,12 @@ public class DataSetTest {
 		// Create a new data set
 		DataSet dataSet = new DataSet();
 		checkDataSetCreationOnServer(dataSet);
+
+		// Put something in it
 		Model model = ModelFactory.createDefaultModel();
 		Resource resource = model.createResource("testModelResource");
 		Property property = model.createProperty("none", "g");
 		resource.addProperty(property, "testProp");
-		int numTriples = 1;
 
 		// Update the data set
 		dataSet.updateModel("testModel", model);
@@ -149,7 +151,7 @@ public class DataSetTest {
 		Model namedModel2 = dataSet.getModel("testModel");
 		Model differenceModel2 = namedModel2.difference(model);
 		assertFalse(differenceModel2.listStatements().hasNext());
-		
+
 		return;
 	}
 
@@ -157,21 +159,31 @@ public class DataSetTest {
 	 * This operation checks loading a pre-existing data set.
 	 */
 	@Test
-	public void testLoad() {
+	public void testJenaDataSetLoad() {
 
 		// Create a new data set
 		DataSet referenceDataSet = new DataSet();
 		checkDataSetCreationOnServer(referenceDataSet);
 
 		// Put something in it
+		Model model = ModelFactory.createDefaultModel();
+		Resource resource = model.createResource("testModelResource");
+		Property property = model.createProperty("none", "h");
+		resource.addProperty(property, "testProp");
 
 		// Upload it to the server
+		referenceDataSet.updateModel("testModel", model);
 
 		// Load the contents from the server into a new, empty data set
+		DataSet loadedSet = new DataSet();
+		loadedSet.setHost(referenceDataSet.getHost());
+		loadedSet.setPort(referenceDataSet.getPort());
+		loadedSet.setName(referenceDataSet.getName());
+		Dataset jenaDataset = loadedSet.getJenaDataset();
 
 		// Check something!
-
-		fail("Not yet implemented.");
+		assertEquals(referenceDataSet.getJenaDataset().getDefaultModel().toString(),
+				jenaDataset.getDefaultModel().toString());
 
 		return;
 	}
