@@ -10,7 +10,11 @@
  *****************************************************************************/
 package gov.ornl.rse.tests.bats;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import java.util.UUID;
 
@@ -113,6 +117,24 @@ public class DataSetTest {
 
 		return;
 	}
+
+    /**
+     * This operation checks data set deletion
+     */
+    @Test
+    public void testDelete() {
+        // Create a default, empty data set with the default name
+		DataSet dataSet = new DataSet();
+		// Check the data set creation
+		checkDataSetCreationOnServer(dataSet);
+
+        // Delete the dataset here
+        // dataset.delete();
+
+        Dataset contents = dataSet.getJenaDataset();
+        System.out.println(contents);
+        assertNull(contents);
+    }
 
 	/**
 	 * This operation tries to pull some models from the data set
