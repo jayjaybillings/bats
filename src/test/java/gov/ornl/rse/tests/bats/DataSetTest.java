@@ -120,17 +120,21 @@ public class DataSetTest {
 
     /**
      * This operation checks data set deletion
+     * 
+	 * @throws Exception this exception is thrown from getJenaDataset since
+     *                   we are unable to find the dataset after we delete it
      */
     @Test
-    public void testDelete() {
+    public void testDelete() throws Exception {
         // Create a default, empty data set with the default name
 		DataSet dataSet = new DataSet();
 		// Check the data set creation
 		checkDataSetCreationOnServer(dataSet);
 
-        // Delete the dataset here
-        // dataset.delete();
+        // Delete the dataset
+        dataSet.delete();
 
+        // Check that we get null back from the dataset
         Dataset contents = dataSet.getJenaDataset();
         System.out.println(contents);
         assertNull(contents);
