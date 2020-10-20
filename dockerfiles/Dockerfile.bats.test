@@ -1,0 +1,6 @@
+FROM maven:3.6-jdk-11
+COPY pom.xml /home/app/pom.xml
+RUN mvn -f /home/app/pom.xml verify clean --fail-never
+COPY src /home/app/src
+WORKDIR /home/app
+CMD ["mvn", "test"]
