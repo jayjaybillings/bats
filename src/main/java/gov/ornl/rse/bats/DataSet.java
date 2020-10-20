@@ -211,8 +211,6 @@ public class DataSet {
 			// Note that transactions must proceed with begin(), some operation(), and
 			// commit().
 			uploadConn.begin(ReadWrite.WRITE);
-			System.out.println(model.toString());
-//			uploadConn.load(modelName, model);
 			uploadConn.put(modelName, model);
 			uploadConn.commit();
 			logger.debug("Committed model " + modelName + " to data set" + getName());
