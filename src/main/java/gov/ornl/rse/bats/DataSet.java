@@ -200,6 +200,8 @@ public class DataSet {
 
     /**
      * This operation deletes the data set with the given name.
+     *
+     * @throws Exception
      */
     public void delete() throws Exception {
 		// Connect the HTTP client
