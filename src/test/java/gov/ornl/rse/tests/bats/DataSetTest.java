@@ -178,6 +178,11 @@ public class DataSetTest {
 		Model differenceModel2 = namedModel2.difference(model);
 		assertFalse(differenceModel2.listStatements().hasNext());
 
+        // Delete model and make sure it doesn't exist
+        dataSet.deleteModel("testModel");
+        namedModel = dataSet.getModel("testModel");
+        assertNull(namedModel);
+
 		return;
 	}
 
