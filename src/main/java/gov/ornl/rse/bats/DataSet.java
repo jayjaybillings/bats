@@ -244,6 +244,30 @@ public class DataSet {
 		}
 	}
 
+    /**
+	 * This operation deletes the model for the data set
+	 *
+	 * @param modelName the name of the model that will be deleted
+	 */
+	public void deleteModel(final String modelName) {
+
+		RDFConnectionRemoteBuilder uploadConnBuilder = RDFConnectionFuseki.create()
+				.destination(getFullURI() + "/data");
+
+		// Open a connection to upload the ICE ontology.
+		try (RDFConnectionFuseki uploadConn = (RDFConnectionFuseki) uploadConnBuilder.build()) {
+			// Note that transactions must proceed with begin(), some operation(), and
+			// commit().
+			uploadConn.begin(ReadWrite.WRITE);
+			uploadConn.delete(modelName);
+			uploadConn.commit();
+			logger.debug("Deleted model " + modelName + " from data set" + getName());
+		} catch (Exception e) {
+			logger.error("Unable to delete model " + modelName + " in data set " + getName()
+					+ " on the remote Fuseki server.", e);
+		}
+	}
+
 	/**
 	 * This operation returns the root model in the data set, which is called the
 	 * default graph in the Jena jargon. It is referred to as the root model here to
