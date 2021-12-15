@@ -43,6 +43,3 @@ docker-compose -f docker-compose.test.yml run bats mvn test
 docker-compose -f docker-compose.test.yml down
 ```
 
-## How BATS got its name
-
-I had a discussion with my daughter, 17 months old at the time, about her favorite animal. She picked the moose, but since that is already taken by several projects we settled on her second favorite animal, the bat. I then back-ronymed a name out of it.
