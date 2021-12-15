@@ -19,6 +19,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
@@ -81,6 +82,14 @@ public class DataSet {
 	 * The default name for a dataset.
 	 */
 	private String name = DEFAULT_NAME;
+
+    private String configureName() {
+		String dbName = DEFAULT_NAME;
+		if (name == DEFAULT_NAME) {
+			name += "_" + UUID.randomUUID().toString();
+		}
+		return name;
+    }
 
 	/**
 	 * This operation sets the name of the data set. The name of the data set is the
@@ -163,13 +172,9 @@ public class DataSet {
 	 *                   for any reason.
 	 */
 	public void create() throws Exception {
+        // Configure name
+        String dbName = configureName();
 
-		// Configure the name
-		String dbName = DEFAULT_NAME;
-		if (name == DEFAULT_NAME) {
-			name += "_" + UUID.randomUUID().toString();
-		}
-		dbName = name;
 		// Per the spec, always use tdb2.
 		String dbType = "tdb2";
 
@@ -193,6 +198,25 @@ public class DataSet {
 		return;
 	}
 
+    /**
+     * This operation deletes the data set with the given name.
+     *
+     * @throws Exception
+     */
+    public void delete() throws Exception {
+		// Connect the HTTP client
+		HttpClient client = HttpClientBuilder.create().build();
+		String fusekiLocation = host + ":" + port + "/";
+		String fusekiDataAPILoc = "$/datasets/" + name;
+		HttpDelete delete = new HttpDelete((fusekiLocation + fusekiDataAPILoc));
+
+        // Delete the data set
+        HttpResponse response = client.execute(delete);
+        logger.debug(response.toString());
+
+        return;
+    }
+
 	/**
 	 * This operation directs the data set to update and persist any remotely stored
 	 * versions of this model with this version of the model. This action is a
@@ -211,13 +235,35 @@ public class DataSet {
 			// Note that transactions must proceed with begin(), some operation(), and
 			// commit().
 			uploadConn.begin(ReadWrite.WRITE);
-			System.out.println(model.toString());
-//			uploadConn.load(modelName, model);
 			uploadConn.put(modelName, model);
 			uploadConn.commit();
 			logger.debug("Committed model " + modelName + " to data set" + getName());
 		} catch (Exception e) {
 			logger.error("Unable to update model " + modelName + " in data set " + getName()
+					+ " on the remote Fuseki server.", e);
+		}
+	}
+
+    /**
+	 * This operation deletes the model for the data set
+	 *
+	 * @param modelName the name of the model that will be deleted
+	 */
+	public void deleteModel(final String modelName) {
+
+		RDFConnectionRemoteBuilder uploadConnBuilder = RDFConnectionFuseki.create()
+				.destination(getFullURI() + "/data");
+
+		// Open a connection to upload the ICE ontology.
+		try (RDFConnectionFuseki uploadConn = (RDFConnectionFuseki) uploadConnBuilder.build()) {
+			// Note that transactions must proceed with begin(), some operation(), and
+			// commit().
+			uploadConn.begin(ReadWrite.WRITE);
+			uploadConn.delete(modelName);
+			uploadConn.commit();
+			logger.debug("Deleted model " + modelName + " from data set" + getName());
+		} catch (Exception e) {
+			logger.error("Unable to delete model " + modelName + " in data set " + getName()
 					+ " on the remote Fuseki server.", e);
 		}
 	}

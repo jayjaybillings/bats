@@ -6,16 +6,16 @@ services:
       dockerfile: Dockerfile.fuseki
     network_mode: "host"
     ports:
-    - "3030:3030"
+      - "3030:3030"
     volumes:
       - /opt/fuseki-TDB:/data/TDB
 
   bats:
     build:
-      context: .
-      dockerfile: dockerfiles/Dockerfile.bats
+      context: ./
+      dockerfile: ./dockerfiles/Dockerfile.bats.test
     network_mode: "host"
     ports:
       - "8080:8080"
-    depends_on:
-      - fuseki
+    depends_on: 
+       - fuseki
